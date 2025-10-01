@@ -24,9 +24,9 @@ import (
 // @description     Esta é uma API completa para gerenciamento de usuários, como parte de um projeto de portfólio.
 // @termsOfService  http://swagger.io/terms/
 //
-// @contact.name   Seu Nome
-// @contact.url    https://seulinkedin.com/in/seu-usuario
-// @contact.email  seu.email@provedor.com
+// @contact.name   Will Cristo
+// @contact.url    https://linkedin.com/in/willjrcristo
+// @contact.email  willjrcristo@gmail.com
 //
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
