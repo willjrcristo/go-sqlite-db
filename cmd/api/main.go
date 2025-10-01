@@ -119,33 +119,6 @@ func main() {
 	}
 }
 
-/* 
-	initDB: inicializa a conexão com o banco de dados SQLite e cria a tabela de usuários se ela não existir.
-	deprecated: agora usamos migrations para gerenciar o esquema do banco de dados.
-*/
-/*
-func initDB(filepath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", filepath)
-	if err != nil {
-		return nil, err
-	}
-	if err = db.Ping(); err != nil {
-		return nil, err
-	}
-	sqlStmt := `
-	CREATE TABLE IF NOT EXISTS usuarios (
-		id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-		nome TEXT,
-		email TEXT
-	);
-	`
-	_, err = db.Exec(sqlStmt)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}*/
-
 // runMigrations executa as migrations do banco de dados na inicialização.
 func runMigrations(db *sql.DB) error {
 	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
