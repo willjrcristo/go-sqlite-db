@@ -14,6 +14,8 @@ import (
 	_ "github.com/willjrcristo/go-sqlite-db/docs" // Importa a pasta docs gerada
 
 	// Nossos pacotes internos da aplicação!
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	_ "github.com/prometheus/client_golang/prometheus/promhttp"
 	httphandler "github.com/willjrcristo/go-sqlite-db/internal/handler/http"
 	"github.com/willjrcristo/go-sqlite-db/internal/repository"
 	"github.com/willjrcristo/go-sqlite-db/internal/service"
@@ -75,6 +77,8 @@ func main() {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 
+	r.Use(prometheusMiddleware)
+
 	// Rota de Health Check
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("API de Usuários está no ar! 🚀"))
@@ -84,6 +88,10 @@ func main() {
     // A URL será http://localhost:8080/swagger/index.html
     r.Get("/swagger/*", httpSwagger.WrapHandler)
     slog.Info("📖 Documentação Swagger disponível em http://localhost:8080/swagger/index.html")
+
+	// Rota para expor as métricas do Prometheus
+	r.Handle("/metrics", promhttp.Handler())
+	slog.Info("📊 Métricas Prometheus disponíveis em http://localhost:8080/metrics")
 
 	// "Montamos" todas as rotas de usuário sob o prefixo /usuarios
 	r.Mount("/usuarios", usuarioHandler.Routes())
