@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -9,6 +10,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/file" // O driver para ler migrations do disco
+
 	_ "github.com/mattn/go-sqlite3"
 	httpSwagger "github.com/swaggo/http-swagger"
 	_ "github.com/willjrcristo/go-sqlite-db/docs" // Importa a pasta docs gerada
@@ -36,12 +42,12 @@ import (
 // @host      localhost:8080
 // @BasePath  /
 func main() {
-	// --- 1. CONFIGURAÇÃO DO LOGGER ---
+	// --- CONFIGURAÇÃO DO LOGGER ---
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 	slog.Info("🚀 Iniciando a API de Usuários...")
 
-	// --- 2. CONEXÃO COM O BANCO DE DADOS ---
+	// --- CONEXÃO COM O BANCO DE DADOS ---
 	db, err := initDB("./sqlite-database.db")
 	if err != nil {
 		slog.Error("Erro ao inicializar o banco de dados", "error", err)
@@ -50,7 +56,14 @@ func main() {
 	defer db.Close()
 	slog.Info("💾 Conexão com o banco de dados estabelecida com sucesso.")
 
-	// --- 3. INJEÇÃO DE DEPENDÊNCIAS (WIRING) ---
+	slog.Info("⏳ Executando migrations do banco de dados...")
+	if err := runMigrations(db); err != nil {
+		slog.Error("Erro ao executar as migrations", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("✅ Migrations executadas com sucesso.")
+
+	// --- INJEÇÃO DE DEPENDÊNCIAS (WIRING) ---
 	// Criamos as instâncias de cada camada, passando a dependência para a camada seguinte.
 	// DB -> Repository -> Service -> Handler
 
@@ -67,7 +80,7 @@ func main() {
 	slog.Info("Camada de handler inicializada")
 
 
-	// --- 4. CONFIGURAÇÃO DO ROTEADOR E ROTAS ---
+	// --- CONFIGURAÇÃO DO ROTEADOR E ROTAS ---
 	r := chi.NewRouter()
 
 	// Middlewares
@@ -98,7 +111,7 @@ func main() {
 	slog.Info("🛰️  Rotas de /usuarios registradas")
 
 
-	// --- 5. INICIALIZAÇÃO DO SERVIDOR HTTP ---
+	// --- INICIALIZAÇÃO DO SERVIDOR HTTP ---
 	slog.Info("✅ Servidor pronto para receber requisições na porta :8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		slog.Error("Erro ao iniciar o servidor", "error", err)
@@ -106,7 +119,11 @@ func main() {
 	}
 }
 
-// initDB (a função continua a mesma de antes)
+/* 
+	initDB: inicializa a conexão com o banco de dados SQLite e cria a tabela de usuários se ela não existir.
+	deprecated: agora usamos migrations para gerenciar o esquema do banco de dados.
+*/
+/*
 func initDB(filepath string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", filepath)
 	if err != nil {
@@ -127,4 +144,30 @@ func initDB(filepath string) (*sql.DB, error) {
 		return nil, err
 	}
 	return db, nil
+}*/
+
+// runMigrations executa as migrations do banco de dados na inicialização.
+func runMigrations(db *sql.DB) error {
+	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	if err != nil {
+		return err
+	}
+
+	// Aponta para a pasta de migrations
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"sqlite3",
+		driver,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Executa as migrations para cima (aplicando as novas)
+	err = m.Up()
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return err
+	}
+
+	return nil
 }
