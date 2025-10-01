@@ -50,6 +50,16 @@ func (h *UsuarioHandler) Routes() chi.Router {
 
 // --- MÉTODOS DO HANDLER ---
 
+// @Summary      Cria um novo usuário
+// @Description  Adiciona um novo usuário ao banco de dados com base nos dados fornecidos
+// @Tags         usuarios
+// @Accept       json
+// @Produce      json
+// @Param        usuario  body      domain.Usuario  true  "Dados do usuário para criação"
+// @Success      201      {object}  domain.Usuario
+// @Failure      400      {object}  map[string]string
+// @Failure      500      {object}  map[string]string
+// @Router       /usuarios [post]
 func (h *UsuarioHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var usuario domain.Usuario
 	if err := json.NewDecoder(r.Body).Decode(&usuario); err != nil {
@@ -71,6 +81,13 @@ func (h *UsuarioHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, usuario)
 }
 
+// @Summary      Lista todos os usuários
+// @Description  Retorna uma lista com todos os usuários cadastrados
+// @Tags         usuarios
+// @Produce      json
+// @Success      200  {array}   domain.Usuario
+// @Failure      500  {object}  map[string]string
+// @Router       /usuarios [get]
 func (h *UsuarioHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	usuarios, err := h.service.GetAllUsers(r.Context())
 	if err != nil {
@@ -80,6 +97,16 @@ func (h *UsuarioHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, usuarios)
 }
 
+// @Summary      Busca um usuário por ID
+// @Description  Retorna os dados de um usuário específico com base no seu ID
+// @Tags         usuarios
+// @Produce      json
+// @Param        id   path      int  true  "ID do Usuário"
+// @Success      200  {object}  domain.Usuario
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /usuarios/{id} [get]
 func (h *UsuarioHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -101,6 +128,18 @@ func (h *UsuarioHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, usuario)
 }
 
+// @Summary      Atualiza um usuário
+// @Description  Atualiza os dados de um usuário existente com base no seu ID
+// @Tags         usuarios
+// @Accept       json
+// @Produce      json
+// @Param        id       path      int             true  "ID do Usuário"
+// @Param        usuario  body      domain.Usuario  true  "Dados do usuário para atualização"
+// @Success      204      {string}  string "No Content"
+// @Failure      400      {object}  map[string]string
+// @Failure      404      {object}  map[string]string
+// @Failure      500      {object}  map[string]string
+// @Router       /usuarios/{id} [put]
 func (h *UsuarioHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -131,6 +170,15 @@ func (h *UsuarioHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// @Summary      Deleta um usuário
+// @Description  Remove um usuário do banco de dados com base no seu ID
+// @Tags         usuarios
+// @Produce      json
+// @Param        id   path      int  true  "ID do Usuário"
+// @Success      204  {string}  string "No Content"
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /usuarios/{id} [delete]
 func (h *UsuarioHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
