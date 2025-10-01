@@ -9,67 +9,83 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	_ "github.com/mattn/go-sqlite3" // Driver do SQLite
+	_ "github.com/mattn/go-sqlite3"
+
+	// Nossos pacotes internos da aplicação!
+	httphandler "github.com/willjrcristo/go-sqlite-db/internal/handler/http"
+	"github.com/willjrcristo/go-sqlite-db/internal/repository"
+	"github.com/willjrcristo/go-sqlite-db/internal/service"
 )
 
 func main() {
 	// --- 1. CONFIGURAÇÃO DO LOGGER ---
-	// Usamos o slog para ter logs estruturados (em JSON), o que é ótimo para a observabilidade.
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
-
 	slog.Info("🚀 Iniciando a API de Usuários...")
 
 	// --- 2. CONEXÃO COM O BANCO DE DADOS ---
 	db, err := initDB("./sqlite-database.db")
 	if err != nil {
 		slog.Error("Erro ao inicializar o banco de dados", "error", err)
-		os.Exit(1) // Encerra a aplicação se não conseguir conectar ao DB.
+		os.Exit(1)
 	}
 	defer db.Close()
 	slog.Info("💾 Conexão com o banco de dados estabelecida com sucesso.")
 
-	// --- 3. CONFIGURAÇÃO DO ROTEADOR (CHI) ---
+	// --- 3. INJEÇÃO DE DEPENDÊNCIAS (WIRING) ---
+	// Criamos as instâncias de cada camada, passando a dependência para a camada seguinte.
+	// DB -> Repository -> Service -> Handler
+
+	// Camada de Repositório
+	usuarioRepo := repository.NewSQLiteRepository(db)
+	slog.Info("Camada de repositório inicializada")
+
+	// Camada de Serviço
+	usuarioService := service.NewUsuarioService(usuarioRepo)
+	slog.Info("Camada de serviço inicializada")
+
+	// Camada de Handler
+	usuarioHandler := httphandler.NewUsuarioHandler(usuarioService)
+	slog.Info("Camada de handler inicializada")
+
+
+	// --- 4. CONFIGURAÇÃO DO ROTEADOR E ROTAS ---
 	r := chi.NewRouter()
 
-	// Middlewares são "filtros" que rodam em toda requisição.
-	r.Use(middleware.RequestID)      // Adiciona um ID único para cada requisição.
-	r.Use(middleware.RealIP)         // Adiciona o IP real do cliente.
-	r.Use(middleware.Logger)         // Loga o início e o fim de cada requisição.
-	r.Use(middleware.Recoverer)      // Se a aplicação entrar em pânico, ele se recupera e retorna um erro 500.
-	r.Use(middleware.Timeout(60 * time.Second)) // Define um timeout para as requisições.
+	// Middlewares
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger) // Renomeado de slog.Logger para evitar conflito
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Timeout(60 * time.Second))
 
-	// --- 4. DEFINIÇÃO DAS ROTAS (ainda vazias) ---
-	// Por enquanto, uma rota raiz para sabermos que o servidor está no ar.
+	// Rota de Health Check
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Bem-vindo à API de Usuários!"))
+		w.Write([]byte("API de Usuários está no ar! 🚀"))
 	})
 
-	// TODO: Aqui vamos registrar as rotas do CRUD de usuários (ex: r.Mount("/usuarios", ...))
-	// quando tivermos o nosso handler.
+	// "Montamos" todas as rotas de usuário sob o prefixo /usuarios
+	r.Mount("/usuarios", usuarioHandler.Routes())
+	slog.Info("🛰️  Rotas de /usuarios registradas")
 
-	slog.Info("🛰️  Servidor escutando na porta :8080")
 
 	// --- 5. INICIALIZAÇÃO DO SERVIDOR HTTP ---
+	slog.Info("✅ Servidor pronto para receber requisições na porta :8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		slog.Error("Erro ao iniciar o servidor", "error", err)
 		os.Exit(1)
 	}
 }
 
-// initDB inicializa a conexão com o banco de dados SQLite e cria a tabela de usuários se ela não existir.
+// initDB (a função continua a mesma de antes)
 func initDB(filepath string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", filepath)
 	if err != nil {
 		return nil, err
 	}
-
-	// Verifica se a conexão com o banco de dados é bem-sucedida.
 	if err = db.Ping(); err != nil {
 		return nil, err
 	}
-
-	// Cria a tabela de usuários
 	sqlStmt := `
 	CREATE TABLE IF NOT EXISTS usuarios (
 		id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -81,6 +97,5 @@ func initDB(filepath string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return db, nil
 }
