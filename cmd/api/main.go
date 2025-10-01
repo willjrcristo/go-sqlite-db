@@ -14,8 +14,10 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/stripe/stripe-go/v78"
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	// --- Pacotes Internos ---
@@ -40,6 +42,16 @@ import (
 // @host      localhost:8080
 // @BasePath  /
 func main() {
+
+	// --- CARREGAR VARIÁVEIS DE AMBIENTE ---
+    if err := godotenv.Load(); err != nil {
+        slog.Warn("Aviso: arquivo .env não encontrado. Usando variáveis de ambiente do sistema.")
+    }
+    slog.Info("🔑 Variáveis de ambiente carregadas")
+
+    // --- CONFIGURAÇÃO DA STRIPE E DO LOGGER ---
+    stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+
 	// --- CONFIGURAÇÃO DO LOGGER ---
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
