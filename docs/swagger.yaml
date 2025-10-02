@@ -8,13 +8,23 @@ definitions:
         type: integer
       nome:
         type: string
+      subscription_current_period_end:
+        description: |-
+          Data de expiração do período atual da assinatura.
+          É a "vigência" que você mencionou.
+        type: string
+      subscription_status:
+        description: |-
+          Status da assinatura (ex: "active", "canceled", "past_due").
+          Este campo será nossa "fonte da verdade" interna.
+        type: string
     type: object
 host: localhost:8080
 info:
   contact:
-    email: seu.email@provedor.com
-    name: Seu Nome
-    url: https://seulinkedin.com/in/seu-usuario
+    email: willjrcristo@gmail.com
+    name: Will Cristo
+    url: https://linkedin.com/in/willjrcristo
   description: Esta é uma API completa para gerenciamento de usuários, como parte
     de um projeto de portfólio.
   license:
@@ -189,4 +199,43 @@ paths:
       summary: Atualiza um usuário
       tags:
       - usuarios
+  /usuarios/{id}/criar-checkout:
+    post:
+      description: Gera uma URL de pagamento para um usuário iniciar uma assinatura
+      parameters:
+      - description: ID do Usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Cria uma sessão de checkout na Stripe
+      tags:
+      - assinaturas
 swagger: "2.0"

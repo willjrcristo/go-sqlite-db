@@ -11,9 +11,9 @@ const docTemplate = `{
         "title": "{{.Title}}",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "Seu Nome",
-            "url": "https://seulinkedin.com/in/seu-usuario",
-            "email": "seu.email@provedor.com"
+            "name": "Will Cristo",
+            "url": "https://linkedin.com/in/willjrcristo",
+            "email": "willjrcristo@gmail.com"
         },
         "license": {
             "name": "Apache 2.0",
@@ -272,6 +272,65 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/usuarios/{id}/criar-checkout": {
+            "post": {
+                "description": "Gera uma URL de pagamento para um usuário iniciar uma assinatura",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assinaturas"
+                ],
+                "summary": "Cria uma sessão de checkout na Stripe",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do Usuário",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -285,6 +344,14 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "nome": {
+                    "type": "string"
+                },
+                "subscription_current_period_end": {
+                    "description": "Data de expiração do período atual da assinatura.\nÉ a \"vigência\" que você mencionou.",
+                    "type": "string"
+                },
+                "subscription_status": {
+                    "description": "Status da assinatura (ex: \"active\", \"canceled\", \"past_due\").\nEste campo será nossa \"fonte da verdade\" interna.",
                     "type": "string"
                 }
             }
